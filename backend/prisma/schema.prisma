@@ -1,0 +1,144 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  password_hash String
+  created_at    DateTime @default(now())
+
+  tasks             Task[]
+  pomodoro_sessions PomodoroSession[]
+  drowsiness_events DrowsinessEvent[]
+  focus_events      FocusEvent[]
+  telegram_settings TelegramSettings?
+  daily_analytics   DailyAnalytics[]
+  notifications     Notification[]
+  system_logs       SystemLog[]
+
+  @@map("users")
+}
+
+model Task {
+  id           String    @id @default(uuid())
+  user_id      String
+  title        String
+  description  String    @default("")
+  priority     String    @default("medium") // low, medium, high
+  status       String    @default("pending") // pending, in_progress, completed
+  created_at   DateTime  @default(now())
+  completed_at DateTime?
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("tasks")
+}
+
+model PomodoroSession {
+  id              String    @id @default(uuid())
+  user_id         String
+  task_id         String?
+  start_time      DateTime  @default(now())
+  end_time        DateTime?
+  focus_duration  Int       @default(25) // minutes
+  break_duration  Int       @default(5)  // minutes
+  session_status  String    @default("active") // active, paused, completed, cancelled
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("pomodoro_sessions")
+}
+
+model DrowsinessEvent {
+  id                   String   @id @default(uuid())
+  user_id              String
+  event_time           DateTime @default(now())
+  eye_closure_duration Float    // seconds
+  severity             String   // low, medium, high
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("drowsiness_events")
+}
+
+model FocusEvent {
+  id         String    @id @default(uuid())
+  user_id    String
+  event_type String    // LOOKING_AWAY, FACE_MISSING, LEFT_DESK
+  start_time DateTime  @default(now())
+  end_time   DateTime?
+  duration   Float?    // seconds
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("focus_events")
+}
+
+model TelegramSettings {
+  id        String  @id @default(uuid())
+  user_id   String  @unique
+  bot_token String  @default("")
+  chat_id   String  @default("")
+  enabled   Boolean @default(false)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("telegram_settings")
+}
+
+model DailyAnalytics {
+  id                 String   @id @default(uuid())
+  user_id            String
+  date               DateTime
+  focus_score        Float    @default(0)
+  productivity_score Float    @default(0)
+  drowsiness_score   Float    @default(0)
+  total_focus_minutes Float   @default(0)
+  total_sessions     Int      @default(0)
+  tasks_completed    Int      @default(0)
+  total_tasks        Int      @default(0)
+  drowsiness_count   Int      @default(0)
+  distraction_count  Int      @default(0)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, date])
+  @@map("daily_analytics")
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  user_id    String
+  type       String   // drowsiness, session_complete, target_achieved, focus_lost
+  message    String
+  read       Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model SystemLog {
+  id         String   @id @default(uuid())
+  user_id    String?
+  level      String   // info, warn, error
+  message    String
+  metadata   String?  // JSON string
+  created_at DateTime @default(now())
+
+  user User? @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@map("system_logs")
+}
