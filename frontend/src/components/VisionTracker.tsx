@@ -36,7 +36,7 @@ export default function VisionTracker() {
     if (!videoRef.current || !canvasRef.current) return;
 
     const faceMesh = new FaceMesh({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+      locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
     });
 
     faceMesh.setOptions({
@@ -61,7 +61,7 @@ export default function VisionTracker() {
     camera.start().then(() => {
       setIsCameraActive(true);
       setStatus('Active');
-    }).catch(err => {
+    }).catch((err: unknown) => {
       console.error(err);
       setStatus('Camera Access Denied');
     });
